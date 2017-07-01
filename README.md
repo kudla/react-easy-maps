@@ -1,1 +1,1 @@
-# npm-package-template
+# react-easy-maps
