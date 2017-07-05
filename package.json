@@ -10,7 +10,8 @@
     "build": "npm run build:source && npm run build:tests",
     "patch": "npm run eslint && npm run build && npm test && npm version patch",
     "postpublish": "git push && git push --tags",
-    "test": "node node_modules/mocha/bin/mocha --reporter spec test/dist/*"
+    "test": "node node_modules/mocha/bin/mocha --reporter spec test/dist/*",
+    "watch": "npm run build:source -- --watch --progress || echo '\\033[0;31mBuild fail. Restart in 3 seconds\\033[0m' &&  sleep 3 && npm run watch"
   },
   "repository": {
     "type": "git",
