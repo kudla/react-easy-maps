@@ -1,4 +1,11 @@
 {
-    "presets": ["es2015"],
-    "plugins": ["transform-object-rest-spread", "babel-plugin-transform-class-properties"]
+    "presets": ["es2015", "react"],
+    "plugins": [
+        "transform-object-rest-spread", "babel-plugin-transform-class-properties",
+        ["provide-modules", {
+            "react": {
+                "default": "React"
+            }
+        }]
+    ]
 }
