@@ -11,24 +11,13 @@ export const ENGINE_STATUSES = {
     NONE: 'none'
 };
 export class Map extends Component {
-    static use(Engine, options) {
-        if(!(EasyMap.isPrototypeOf(Engine) || Engine instanceof Promise)) {
-            throw new Error('Should init component with EasyMap or Promise');
-        }
-        class ImplementedMap extends Map {
-            static engineOptions = options;
-            constructor(props, context) {
-                super(props, context);
-                this.engine = Engine;
-            }
-        }
-        ImplementedMap.then = function () {
-            Promise.resolve(Engine).then(...arguments);
-        };
-        return ImplementedMap;
-    }
     static childContextTypes = {
         map: PropTypes.instanceOf(EasyMap)
+    }
+    constructor(props, context) {
+        super(props, context);
+        let {constructor: {engine}} = this;
+        this.engine = engine;
     }
     get map() {
         let {[$map]: map} = this;
