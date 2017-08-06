@@ -1,8 +1,9 @@
-import {Component, PropTypes} from 'react';
+import {Component} from 'react';
+import {PropTypes} from 'prop-types';
 import classNames from 'classnames';
 import {EasyMap} from 'easy-maps';
 
-export class MapEngine extends Component {
+export class MapTarget extends Component {
     static contextTypes = {
         map: PropTypes.instanceOf(EasyMap)
     };
@@ -14,13 +15,9 @@ export class MapEngine extends Component {
         map.mount(refs.target);
     }
     render() {
-        let {map: {constructor: {engineName = ''}}} = this;
         let {children} = this.props;
-        engineName = engineName.replace(/(\s+|(?=[A-Z]))/g, '-').toLowerCase();
         let className = classNames(
-            'easy-map__engine', {
-                [`easy-map__engine-${engineName}`]: engineName
-            }
+            'easy-map__target'
         );
         return <div ref="target" className={className}>
             {children}

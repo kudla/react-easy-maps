@@ -1,18 +1,24 @@
-import {Component, PropTypes} from 'react';
+import {Component} from 'react';
+import {PropTypes} from 'prop-types';
 import classNames from 'classnames';
-import {EasyMap} from 'easy-maps';
-import {MapEngine} from '../map-engine';
+import {EasyMap, EasyView, verifyEngine} from 'easy-maps';
+import {MapTarget} from '../map-target';
 const $map = Symbol('easy-map');
 const $engine = Symbol('easy-map-engine');
 export const ENGINE_STATUSES = {
-    PENDING: 'pending',
     RESOLVED: '',
-    INVALID: 'invalid',
-    NONE: 'none'
+    ENGINE_PENDING: 'engine-pending',
+    ENGINE_INVALID: 'engine-invalid',
+    MAP_PENDING: 'map-panding',
+    MAP_INVALID: 'map-invalid',
+    NO_ENGINE: 'no-engine',
+    NO_MAP: 'no-map'
 };
-export class Map extends Component {
+export class MapPrototype extends Component {
     static childContextTypes = {
-        map: PropTypes.instanceOf(EasyMap)
+        map: PropTypes.instanceOf(EasyMap),
+        view: PropTypes.instanceOf(EasyView),
+        engine: PropTypes.object
     }
     constructor(props, context) {
         super(props, context);
@@ -27,80 +33,134 @@ export class Map extends Component {
     }
     get mapStatus() {
         const {
-            PENDING,
             RESOLVED,
-            INVALID,
-            NONE
+            ENGINE_PENDING,
+            ENGINE_INVALID,
+            MAP_PENDING,
+            MAP_INVALID,
+            NO_ENGINE,
+            NO_MAP
         } = ENGINE_STATUSES;
-        let {[$map]: map} = this;
+        let {[$map]: map, [$engine]: engine} = this;
+        if (engine === null || engine === undefined) {
+            return NO_ENGINE;
+        }
+        if (engine instanceof Promise) {
+            return ENGINE_PENDING;
+        }
+        if (engine instanceof Error) {
+            return ENGINE_INVALID;
+        }
         if (map === null || map === undefined) {
-            return NONE;
+            return NO_MAP;
         }
         if (map instanceof Promise) {
-            return PENDING;
+            return MAP_PENDING;
         }
         if (map instanceof EasyMap) {
             return RESOLVED;
         }
-        return INVALID;
+        return MAP_INVALID;
     }
-    set engine(Engine) {
-        if (Engine instanceof Promise) {
-            let enginePromise = Engine
-                .then(Engine => {
-                    if (this[$engine] === enginePromise) {
-                        this.engine = Engine;
-                    }
-                });
-            this[$engine] = enginePromise;
-            return;
-        }
-        if (!EasyMap.isPrototypeOf(Engine)) {
-            throw new Error('Engine should extend EasyMap');
-        }
-        this[$engine] = Engine;
-        let {props, constructor: {engineOptions}} = this;
-        this.map = new Engine(props, engineOptions);
+    get engine() {
+        return this[$engine];
     }
-    set map(value) {
-        if (value instanceof Promise) {
-            this[$map] = value;
-            value.then(map => {
-                if(this[$map] === value) {
-                    this.map = map;
+    set engine(engine) {
+        engine = this.resolveEngine(engine);
+        this[$engine] = engine;
+        this.updateIfMounted();
+        let {Map, View} = engine;
+        if (Map) {
+            let {props, constructor: {engineOptions}} = this;
+            let map = new Map(props, engineOptions);
+            this.view = new View(map);
+            this.map = map;
+        }
+    }
+    resolveEngine(engine) {
+        if (engine instanceof Promise) {
+            let enginePromise = engine;
+            let resolveValue = value => {
+                if (this.engine === enginePromise) {
+                    this.engine = value;
                 }
-            });
+            };
+            enginePromise
+                .then(resolveValue, resolveValue);
+            return enginePromise;
+        }
+        if (engine instanceof Error) {
+            return engine;
+        }
+
+        try {
+            verifyEngine(engine);
+            return engine;
+        } catch (error) {
+            return error;
+        }
+
+    }
+    set map(map) {
+        if (map instanceof Promise) {
+            this[$map] = map;
+            let mapPromise = map;
+            let resolveValue = value => {
+                if(this[$map] === mapPromise) {
+                    this.map = value;
+                }
+            };
+            mapPromise.then(resolveValue, resolveValue);
             return;
         }
-        if (!(value instanceof EasyMap)) {
-            throw new Error('Map should be instance of EasyMap');
-        }
-        this[$map] = value;
+        this[$map] = map;
+        this.updateIfMounted();
+    }
+    updateIfMounted() {
         if (this.refs.map) {
             this.setState({});
         }
     }
+    updateView() {
+        let {view} = this;
+        if (this.refs.map && view) {
+            view.updateProps();
+        }
+    }
     getChildContext() {
-        let {map} = this;
-        return {map};
+        let {engine, map, view} = this;
+        return {map, engine, view};
     }
     Children = () => {
         let {map} = this;
         if (map) {
             let {children} = this.props;
-            return <MapEngine>{children}</MapEngine>;
+            return <MapTarget>{children}</MapTarget>;
         }
         return false;
     };
+    componentDidMount() {
+        this.updateView();
+    }
+    componentDidUpdate() {
+        this.updateView();
+    }
     render() {
         let {className} = this.props;
-        let {mapStatus, Children} = this;
+        let {
+            mapStatus,
+            Children,
+            engine: {engineName},
+            view
+        } = this;
+        engineName = engineName && engineName.replace(/(\s+|(?=(?!\b)[A-Z]))/g, '-').toLowerCase();
 
         className = classNames(
             className,
             'easy-map',
             {
-                [`easy-map_engine-${mapStatus}`]: mapStatus
+                [`easy-map_${mapStatus}`]: mapStatus,
+                [`easy-map_${engineName}`]: engineName
             }
         );
         return <div ref="map" className={className}>

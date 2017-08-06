@@ -1,16 +1,16 @@
-import {EasyMap} from 'easy-maps';
-import {Map} from './map';
+import {verifyEngine} from 'easy-maps';
+import {MapPrototype} from './map';
 
-export function MapFactory(Engine, options) {
-    if(!(EasyMap.isPrototypeOf(Engine) || Engine instanceof Promise)) {
-        throw new Error('Should init component with EasyMap or Promise');
+export function MapFactory(engine, options) {
+    if(!(engine instanceof Promise)) {
+        verifyEngine(engine);
     }
-    class ImplementedMap extends Map {
+    class Map extends MapPrototype {
         static engineOptions = options;
-        static engine = Engine;
+        static engine = engine;
     }
-    ImplementedMap.then = function () {
-        Promise.resolve(Engine).then(...arguments);
+    Map.then = function () {
+        Promise.resolve(engine).then(...arguments);
     };
-    return ImplementedMap;
+    return Map;
 }
