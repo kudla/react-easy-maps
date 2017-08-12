@@ -69,12 +69,10 @@ export class MapPrototype extends Component {
         engine = this.resolveEngine(engine);
         this[$engine] = engine;
         this.updateIfMounted();
-        let {Map, View} = engine;
+        let {Map} = engine;
         if (Map) {
             let {props, constructor: {engineOptions}} = this;
-            let map = new Map(props, engineOptions);
-            this.view = new View(map);
-            this.map = map;
+            this.map = new Map(props, engineOptions);
         }
     }
     resolveEngine(engine) {
@@ -113,6 +111,8 @@ export class MapPrototype extends Component {
             mapPromise.then(resolveValue, resolveValue);
             return;
         }
+        let {View} = this.engine;
+        this.view = new View(map);
         this[$map] = map;
         this.updateIfMounted();
     }
@@ -150,8 +150,7 @@ export class MapPrototype extends Component {
         let {
             mapStatus,
             Children,
-            engine: {engineName},
-            view
+            engine: {engineName}
         } = this;
         engineName = engineName && engineName.replace(/(\s+|(?=(?!\b)[A-Z]))/g, '-').toLowerCase();
 
