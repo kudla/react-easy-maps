@@ -6,7 +6,7 @@ function Numerable(props, propName) {
     let value = props[propName];
     if (value !== undefined) {
         if (Number.isNaN(Number(value))) {
-            return new Error('Should be a number');
+            return new Error(`${propName} should be a number`);
         }
     }
 }
