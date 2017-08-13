@@ -10,17 +10,22 @@ export class MapTarget extends Component {
     get map() {
         return this.context.map;
     }
+    state = {
+        mapMounted: false
+    };
     componentDidMount() {
         let {map, refs} = this;
         map.mount(refs.target);
+        this.setState({mapMounted: true});
     }
     render() {
         let {children} = this.props;
+        let {mapMounted} = this.state;
         let className = classNames(
             'easy-map__target'
         );
         return <div ref="target" className={className}>
-            {children}
+            {mapMounted && children}
         </div>;
     }
 }
